@@ -2,5 +2,5 @@ vgaromimage: file=$BXSHARE/VGABIOS-lgpl-latest
 vga: extension=vbe
 memory: guest=512, host=512
 
-ata0-master: type=disk, path="OS.bin", mode=flat
+ata0-master: type=disk, path="OS_disk_image.img", mode=flat
 boot: disk
