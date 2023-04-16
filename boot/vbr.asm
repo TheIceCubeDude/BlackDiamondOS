@@ -4,9 +4,8 @@
 [BITS 16]
 [ORG 0x7C00]
 
-%define VOLUME_SIZE 1048576 * 32 ;;32 Megs, make sure to also change partition 1 size 
-
 ;;Sector #0
+%include "boot/vbr/bpb.asm"
 %include "boot/vbr/bootsrap.asm"
 
 ;;Sector #1

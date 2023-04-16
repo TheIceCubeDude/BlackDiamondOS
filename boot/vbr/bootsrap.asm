@@ -1,47 +1,13 @@
-bpb:
-.jmpBoot:
-jmp short start
-nop
-.OEMName: db "MSWIN4.1"
-.BytsPerSec: dw 512
-.SecPerClus: db 1
-.RsvdSecCnt: dw 32
-.NumFats: db 1
-.RootEntCnt: dw 0
-.TotSec16: dw 0
-.Media: db 0xF8
-.FatSz16: dw 0
-.SecPerTrk: dw 63
-.NumHeads: dw 255
-.HiddSec: dd 0 ;;(AKA starting LBA, but we don't care about this)
-.TotSec32: dd VOLUME_SIZE/512 ;;(AKA size in sectors)
-.FATz32: dd ((VOLUME_SIZE/512)*4)/512 ;;(AKA FAT size in sectors)
-.ExtFlags: dw 0b0000000100000000 ;;Only one active FAT
-.FSVer: dw 0
-.RootClus: dd 2
-.FSInfo: dw 1
-.BkBootSec: dw 6
-.Reserved: times 12 db 0
-.DrvNum: db 0x80
-.Reserved1: db 0
-.BootSig: db 0x29
-.VolID: dd 0xBD05
-.VolLab: db "BlK DMND OS"
-.FilSysType: db "FAT32   "
-
 ;;The VBR loads the 2nd stage bootloader
 ;;The MBR should have passed a pointer to the partition table entry that was booted in DS:ESI, but we assume DS is 0
 ;;The MBR should have forwarded the boot drive in DL
-start:
 cli
 ;;Setup stack (MBR should have set up segments)
-mov esp, 0x7C00 ;;Stack grows downwards
+mov esp, 0x1000 ;;Stack grows downwards
 mov ebp, esp
 xor eax, eax
 mov ss, ax
 push dx
-
-print_info:
 mov ecx, BOOT_STR
 call print_string
 
@@ -64,13 +30,14 @@ pop esi
 
 find_2nd_stage:
 ;;Parses root directory cluster to find BOOT.BIN's cluster #
-mov eax, 0x7E00 - 32
+mov eax, 0x7E00
 .skip_lfn_entries:
-cmp eax, 0x8000 ;;Make sure we haven't reached the end of the root directory
+cmp eax, 0x8000 ;;Make sure we haven't reached the end of the root directory's first cluster (assume BOOT.BIN is in the root direcotry's first cluster)
 je halt
-add eax, 32
 cmp [eax + 11], byte 0x0F
-je .skip_lfn_entries
+jne .check_filename
+add eax, 32
+jmp .skip_lfn_entries
 .check_filename:
 cmp [eax], dword "BOOT"
 je .check_extention
@@ -79,7 +46,7 @@ jmp .skip_lfn_entries
 .check_extention:
 mov ebx, [eax + 8]
 shl ebx, 8
-cmp ebx, 0x4e494200 ;;Hex for BIN followed by 0x00
+cmp ebx, 0x4E494200 ;;Hex for BIN followed by 0x00
 je .get_cluster
 add eax, 32
 jmp .skip_lfn_entries
@@ -115,7 +82,7 @@ push word [DAP.offset]
 mov eax, ebx
 mov ebx, 128 ;;128 FAT entries per sector
 xor edx, edx
-div ebx ;;EAX=FAT sector, EDX=entry # in the FAT sector
+div ebx ;;EAX=FAT sector, EDX=entry # in that FAT sector
 push edx
 add eax, [esi + 8]
 xor ebx, ebx
@@ -141,7 +108,8 @@ cmp ebx, 0x0FFFFFF8 ;;Check if this was the final cluster in chain
 jb load_cluster
 
 exec_2nd_stage:
-pop dx
+;;Disk drive # is passed on stack
+;;ESI contains booted entry ptr
 jmp 0x8000
 
 halt:
