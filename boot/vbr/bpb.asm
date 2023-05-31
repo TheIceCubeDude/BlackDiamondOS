@@ -6,7 +6,7 @@ jmp short start
 nop
 .OEMName: db "MSWIN4.1"
 .BytsPerSec: dw 512
-.SecPerClus: db 1
+.SecPerClus: db 4
 .RsvdSecCnt: dw 32
 .NumFats: db 1
 .RootEntCnt: dw 0

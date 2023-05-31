@@ -1,5 +1,6 @@
 vga: extension=vbe
 vgaromimage: file=$BXSHARE/VGABIOS-lgpl-latest
 memory: guest=512, host=512
+cpuid: x86_64=1
 ata0-master: type=disk, path="OS_disk_image.img", mode=flat
 boot: disk

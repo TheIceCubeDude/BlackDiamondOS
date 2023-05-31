@@ -44,6 +44,8 @@ pop ebx
 jmp check_partitions
 
 get_input:
+mov ecx, VBR_SEP_STR
+call print_string
 xor ax, ax
 int 0x16
 sub al, 0x30
@@ -71,11 +73,12 @@ mov ebx, [eax + 12]
 cmp ebx, 0 ;;Check if the selected partition has a zero size
 je get_input
 mov ebx, [eax + 8]
-mov [DISK_ADDRESS_PACKET.lba], ebx
+mov [DAP.lba], ebx
+mov [DAP.offset], word 0x7C00
 pop dx
 push ax
 mov ah, 0x42
-mov esi, DISK_ADDRESS_PACKET
+mov esi, DAP
 int 0x13
 ;;Jump to loaded VBR (if it failed to load it will just run MBR again)
 xor esi, esi
@@ -94,27 +97,8 @@ xor bx, bx
 int 0x10
 ret
 
-print_string:
-;;ECX = str
-mov ah, 0xE
-mov al, [ecx]
-cmp al, 0
-je ret
-xor bx, bx
-int 0x10
-inc ecx
-jmp print_string
-
-ret: ret
-
-align 4
-DISK_ADDRESS_PACKET: 
-.size: db 0x10
-.unused: db 0
-.count: dw 1
-.offset: dw 0x7C00
-.segment: dw 0
-.lba: dq 0
+%include "boot/util/misc.asm"
 
 INT13_EXTENTION_ERR_STR: db 0xA, 0xD, "-> Int 0x13 extentions not supported on this system/boot media!", 0
 BOOT_STR: db 0xA, 0xA, 0xD, "-> BlackDiamondOS MBR <-", 0xA, 0xA, 0xD, "-> Which partition number would you like to boot? Type the number now.", 0xA, 0xD, "-> Avaliable partitions:   ", 0
+VBR_SEP_STR: db 0xA, 0xA, 0xD, 0
