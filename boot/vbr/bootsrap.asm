@@ -11,7 +11,7 @@ push dx
 push dword [esi + 8] ;;Save booted LBA
 ;;Check FAT32 filesys
 cmp [bpb.SecPerClus], byte 32
-ja halt
+ja fail
 ;;Print message
 mov ecx, BOOT_STR
 call print_string
@@ -21,7 +21,7 @@ mov eax, "BOOT"
 mov ebx, "    "
 call find_file_in_root_dir
 cmp eax, 0xFFFF
-jg halt
+jg fail
 mov cx, 0x7E00
 
 load_next_cluster:
@@ -47,6 +47,7 @@ exec_2nd_stage:
 ;;ESI contains booted entry ptr
 jmp 0x7E00
 
+fail: hlt
 %include "boot/util/misc.asm"
 %include "boot/util/fat32.asm"
 

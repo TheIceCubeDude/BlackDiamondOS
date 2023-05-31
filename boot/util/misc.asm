@@ -10,8 +10,6 @@ inc ecx
 jmp print_string
 .ret: ret
 
-halt: hlt
-
 align 4
 DAP:
 .size: db 0x10

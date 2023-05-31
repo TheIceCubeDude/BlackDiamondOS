@@ -340,7 +340,7 @@ jne fail
 
 enter_lmode:
 pop edx ;;Kernel location
-cli
+
 hlt
 
 ;;Useful subroutines
@@ -462,5 +462,5 @@ SYS_SUPPORT_STR: db "Checking for system support (64 bits + SSE2)...", 0
 BIOS_MMAP_STR: db "Retrieving BIOS E820 memory map...", 0
 LOADING_KERNEL_STR: db "Loading kernel...", 0
 GET_VIDEO_MODE_STR: db "Finding compatible VBE video mode...", 0
-SET_VIDEO_MODE_STR: db "Setting video mode and executing kernel...", 0
+SET_VIDEO_MODE_STR: db "Setting video mode, entering 64 bit mode and executing kernel...", 0
 times (5 * 512) - ($-$$) db 0

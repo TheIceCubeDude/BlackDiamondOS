@@ -1,20 +1,3 @@
-load_fs_sectors:
-;;EAX = starting sector
-;;BX = # of sectors
-;;CX = address
-mov [DAP.count], bx
-mov [DAP.offset], cx
-xor ebx, ebx
-mov bx, [bpb.RsvdSecCnt]
-add eax, ebx
-add eax, [ebp - 6]
-mov [DAP.lba], eax
-mov dx, [ebp - 2]
-mov ah, 0x42
-mov esi, DAP
-int 0x13
-ret
-
 find_file_in_root_dir:
 ;;EAX = first half of filename
 ;;EBX = second half of filename
@@ -42,7 +25,7 @@ mov cx, ax
 mov eax, 0x2000
 .skip_lfn_entries:
 cmp ax, cx ;;Make sure we haven't reached the end of the root directory's first cluster (assume the file is in the root directory's first cluster)
-je halt
+je fail
 cmp [eax + 11], byte 0x0F
 jne .check_filename
 add ax, 32
@@ -73,6 +56,23 @@ mov bx, [eax + 20] ;;High word of cluster #
 shl ebx, 16
 mov bx, [eax + 26] ;;Low word of cluster #
 mov eax, [eax + 28] ;;File size
+ret
+
+load_fs_sectors:
+;;EAX = starting sector
+;;BX = # of sectors
+;;CX = address
+mov [DAP.count], bx
+mov [DAP.offset], cx
+xor ebx, ebx
+mov bx, [bpb.RsvdSecCnt]
+add eax, ebx
+add eax, [ebp - 6]
+mov [DAP.lba], eax
+mov dx, [ebp - 2]
+mov ah, 0x42
+mov esi, DAP
+int 0x13
 ret
 
 load_cluster:
