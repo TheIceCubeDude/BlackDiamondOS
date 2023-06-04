@@ -3,4 +3,4 @@ The memory map during boot is as follows:
 0x1000-0x2000		Stored high memory map
 0x2000-0x7C00		FAT32 processing area
 0x7C00-0x7E00		MBR/VBR bootloader code
-0x7E00+			Second stage bootloader code
+0x7E00+			Second stage bootloader code, stored video mode info, and paging structures

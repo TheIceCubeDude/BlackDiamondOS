@@ -1,5 +1,4 @@
 ;;The MBR lets the user select a VBR to boot
-
 start:
 ;;Setup stack and segments
 mov esp, 0x600 ;;Stack grows downwards
@@ -14,8 +13,7 @@ mov ecx, 512
 rep movsb
 
 ;;Jump to relocated MBR
-mov eax, main
-jmp eax
+jmp 0:main ;;Force absolute jump, but also CS may be non-zero (eg. The BIOS may load us at 0x7C0:0x0 rather than 0x0:0x7C00)
 
 main:
 ;;Save boot drive number
@@ -23,10 +21,9 @@ push dx
 ;;Print info
 mov ecx, BOOT_STR
 call print_string
-
 ;;Print MBR partitions (that are non-zero size)
 mov al, 0x2F
-mov ebx, (partition_1 - 16) + 12 
+mov ebx, partition_1 - 16 + 12 
 check_partitions:
 add ebx, 16
 inc al
@@ -44,8 +41,6 @@ pop ebx
 jmp check_partitions
 
 get_input:
-mov ecx, VBR_SEP_STR
-call print_string
 xor ax, ax
 int 0x16
 sub al, 0x30
@@ -81,6 +76,8 @@ mov ah, 0x42
 mov esi, DAP
 int 0x13
 ;;Jump to loaded VBR (if it failed to load it will just run MBR again)
+mov ecx, VBR_SEP_STR
+call print_string
 xor esi, esi
 pop si
 jmp 0x7C00
@@ -99,6 +96,6 @@ ret
 
 %include "boot/util/misc.asm"
 
-INT13_EXTENTION_ERR_STR: db 0xA, 0xD, "-> Int 0x13 extentions not supported on this system/boot media!", 0
+INT13_EXTENTION_ERR_STR: db 0xA, 0xD, "-> Int 13h extentions not supported on this system/boot media", 0
 BOOT_STR: db 0xA, 0xA, 0xD, "-> BlackDiamondOS MBR <-", 0xA, 0xA, 0xD, "-> Which partition number would you like to boot? Type the number now.", 0xA, 0xD, "-> Avaliable partitions:   ", 0
 VBR_SEP_STR: db 0xA, 0xA, 0xD, 0

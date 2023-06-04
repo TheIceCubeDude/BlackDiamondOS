@@ -206,19 +206,25 @@ mov edx, [ebx]
 pop ebx ;;Get starting cluster #
 push edx ;;Copy destination
 push edx ;;Kernel location
+xor eax, eax
+mov al, [bpb.SecPerClus]
+mov ecx, 512
+mul ecx
+push eax ;;Bytes per cluster
 .load_cluster:
 mov cx, 0x2000
 call load_cluster
 mov edx, [ebp - 10]
+mov ecx, [esp]
 .prepare_copy:
-;;Enter PMode
+;;Enter PMode so we can access >1Mb memory, and so we can use rep movsd rather than rep movsw
 cli
 mov eax, cr0
 or al, 1
 mov cr0, eax
 jmp 0x8:.copy_to_hi_mem
 .copy_to_hi_mem:
-;;Use rep movsd to copy the cluster from 0x2000 to the kernel location
+;;Use rep movsb to copy the cluster from 0x2000 to the kernel location
 [BITS 32]
 mov ax, 0x10
 mov es, ax
@@ -226,8 +232,7 @@ mov ds, ax
 cld
 mov esi, 0x2000
 mov edi, edx
-mov ecx, 512/4
-rep movsd
+rep movsb
 jmp 0x18:.finish_copy
 .finish_copy:
 ;;Exit PMode
@@ -240,14 +245,11 @@ and al, 0xFE
 mov cr0, eax
 jmp 0:.get_next_cluster
 .get_next_cluster:
-mov ax, 0
+xor ax, ax
 mov es, ax
 mov ds, ax
-xor eax, eax
-mov al, [bpb.SecPerClus]
-mov ecx, 512
-mul ecx
-add edx, eax
+mov ecx, [esp]
+add edx, ecx
 mov [ebp - 10], edx
 ;;Loads the FAT entry and gets the next cluster
 push cx
@@ -255,8 +257,10 @@ call load_fat_entry
 pop cx
 cmp ebx, 0x0FFFFFF8 ;;Check if this was the final cluster in chain
 jb .load_cluster
+pop eax ;;Discard EAX we used earlier (bytes per clus)
 pop edx
 pop eax ;;Discard EDX we used earlier (copy destination)
+push dword 0 ;;Later on we pop a 64 bit register, so this zeros the top of it
 push edx;;Save kernel location
 call ok
 jmp get_vbe_modes
@@ -339,9 +343,92 @@ cmp ax, 0x004F
 jne fail
 
 enter_lmode:
-pop edx ;;Kernel location
-
-hlt
+;;Identity maps the first 2MiB of memory, enters long mode, identity maps the first 64GiB of memory and executes kernel
+.enter_pmode:
+;;Enter PMode so we don't have to deal with 16-bit segmentation, and for entering long mode later
+cli
+mov eax, cr0
+or al, 1
+mov cr0, eax
+mov ax, 0x10
+mov es, ax
+mov ds, ax
+mov ss, ax
+jmp 0x8:.wipe_tables
+.wipe_tables:
+[BITS 32]
+;;Fill PML4, PDPT and PD with empty entries
+mov edi, pag_mem
+mov ecx, 0x3000 / 4 ;;This operates on dwords
+xor eax, eax
+cld
+rep stosd
+.mk_pml4:
+;;Makes the Page Map Level 4
+mov eax, pag_mem + 0x1000 ;;Address of PDPT
+or eax, 3 ;;Present | R/W | Supervisor
+mov [pag_mem], eax
+.mk_pdpt_2mb:
+;;Makes the Page Directory Pointer Table
+mov eax, pag_mem + 0x2000 ;;Address of PD
+or eax, 3 ;;Present | R/W | Supervisor
+mov [pag_mem + 0x1000], eax
+.mk_pd_2mb:
+;;Makes the Page Directory (we don't make Page Table because we use 2MB pages)
+mov eax, 131 ;;Present | R/W | Supervisor | Page Size
+mov [pag_mem + 0x2000], eax
+setup_paging:
+mov edx, pag_mem
+mov cr3, edx ;;Set PML4 address
+mov eax, cr4
+or eax, 0b10100000
+mov cr4, eax ;;Set PAE and PGE bits
+.enter_lmode:
+mov ecx, 0xC0000080
+rdmsr
+or eax, 0b100000000
+wrmsr ;;Enable long mode bit in the EFER MSR
+mov eax, cr0
+or eax, 0b10000000000000000000000000000000
+mov cr0, eax ;;Enable paging
+.exit_compat_mode:
+;;Reload segment registers with 64 bit selectors
+mov ax, 0x30
+mov es, ax
+mov ds, ax
+mov ss, ax
+mov fs, ax
+mov gs, ax
+jmp 0x28:.prep_mk_pds_64gb
+[BITS 64]
+.prep_mk_pds_64gb:
+mov rax, 131 ;;Present | R/W | Supervisor | Page Size
+mov rcx, 0x3000 ;;Offset of new PDs (don't use 0x2000 because we don't want to overwrite old PD while it is still in use)
+mov rbx, 0x40000000 * 64 ;;Limit (64 GiB)
+.mk_pds_64gb:
+;;Makes the new Page Directories 
+mov [pag_mem + rcx], rax
+add rax, 0x200000
+add rcx, 8
+cmp rax, rbx
+jb .mk_pds_64gb
+.prep_mk_pdpt_64gb:
+mov rax, pag_mem + 0x3000 ;;Address of first new PD
+or rax, 3 ;;Present | R/W | Supervisor
+mov rcx, 0x1000 ;;Offset of PDPT
+.mk_pdpt_64gb:
+;;(Re-)Makes the Page Directory Pointer Table
+mov [pag_mem + rcx], rax
+add rax, 0x1000
+add rcx, 8
+cmp rax, pag_mem + (0x1000 * 3) + (0x1000 * 64) ;;pag_mem + pml4 + pdpt + (64 * new_pd)
+jb .mk_pdpt_64gb
+.exec_kernel:
+mov rax, vbe_mode_info ;;Video info for kernel use
+mov rbx, 0x2000 ;;Memory map for kernel use
+pop rdx ;;Kernel location
+jmp rdx
+[BITS 16]
 
 ;;Useful subroutines
 fail:
@@ -361,18 +448,18 @@ ret
 gdt:
 .start:
 .null_segment: dq 0
-.code_limit_low: dw 0xFFFF 
-.code_base_low: dw 0
-.code_base_mid: db 0
-.code_access: db 0b10011110
-.code_limit_high: db 0b11001111
-.code_base_high: db 0
-.data_limit_low: dw 0xFFFF 
-.data_base_low: dw 0
-.data_base_mid: db 0
-.data_access: db 0b10010010
-.data_limit_high: db 0b11001111
-.data_base_high: db 0
+.code32_limit_low: dw 0xFFFF 
+.code32_base_low: dw 0
+.code32_base_mid: db 0
+.code32_access: db 0b10011110
+.code32_limit_high: db 0b11001111
+.code32_base_high: db 0
+.data32_limit_low: dw 0xFFFF 
+.data32_base_low: dw 0
+.data32_base_mid: db 0
+.data32_access: db 0b10010010
+.data32_limit_high: db 0b11001111
+.data32_base_high: db 0
 .code16_limit_low: dw 0xFFFF 
 .code16_base_low: dw 0
 .code16_base_mid: db 0
@@ -385,6 +472,18 @@ gdt:
 .data16_access: db 0b10010010
 .data16_limit_high: db 0b00001111
 .data16_base_high: db 0
+.code64_limit_low: dw 0xFFFF 
+.code64_base_low: dw 0
+.code64_base_mid: db 0
+.code64_access: db 0b10011110
+.code64_limit_high: db 0b10101111
+.code64_base_high: db 0
+.data64_limit_low: dw 0xFFFF 
+.data64_base_low: dw 0
+.data64_base_mid: db 0
+.data64_access: db 0b10010010
+.data64_limit_high: db 0b10101111
+.data64_base_high: db 0
 .end:
 
 gdtr:
@@ -463,4 +562,7 @@ BIOS_MMAP_STR: db "Retrieving BIOS E820 memory map...", 0
 LOADING_KERNEL_STR: db "Loading kernel...", 0
 GET_VIDEO_MODE_STR: db "Finding compatible VBE video mode...", 0
 SET_VIDEO_MODE_STR: db "Setting video mode, entering 64 bit mode and executing kernel...", 0
-times (5 * 512) - ($-$$) db 0
+times (6 * 512) - ($-$$) db 0
+
+align 4096
+pag_mem:
