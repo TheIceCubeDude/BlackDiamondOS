@@ -217,7 +217,7 @@ call load_cluster
 mov edx, [ebp - 10]
 mov ecx, [esp]
 .prepare_copy:
-;;Enter PMode so we can access >1Mb memory, and so we can use rep movsd rather than rep movsw
+;;Enter PMode so we can access >1Mb memory
 cli
 mov eax, cr0
 or al, 1
@@ -427,6 +427,8 @@ jb .mk_pdpt_64gb
 mov rax, vbe_mode_info ;;Video info for kernel use
 mov rbx, 0x2000 ;;Memory map for kernel use
 pop rdx ;;Kernel location
+mov ecx, [esp] ;;Booted partition LBA for kernel use
+mov esp, 0x1000
 jmp rdx
 [BITS 16]
 

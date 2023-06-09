@@ -27,8 +27,8 @@ nop
 .DrvNum: db 0x80
 .Reserved1: db 0
 .BootSig: db 0x29
-.VolID: dd 0xBD05
-.VolLab: db "BlK DMND OS"
+.VolID: dd 0x4E05
+.VolLab: db "HAEMATITEOS"
 .FilSysType: db "FAT32   "
 
 start:

@@ -51,7 +51,6 @@ fail: hlt
 %include "boot/util/misc.asm"
 %include "boot/util/fat32.asm"
 
-;BOOT_STR: db 0xA, 0xA, 0xA, 0xD, "-> BlackDiamondOS Bootloader <-", 
 BOOT_STR: db "Ldng...", 0
 times 510-($-$$) db 0
 dw 0xAA55

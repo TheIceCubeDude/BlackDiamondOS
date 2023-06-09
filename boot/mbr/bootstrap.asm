@@ -97,5 +97,5 @@ ret
 %include "boot/util/misc.asm"
 
 INT13_EXTENTION_ERR_STR: db 0xA, 0xD, "-> Int 13h extentions not supported on this system/boot media", 0
-BOOT_STR: db 0xA, 0xA, 0xD, "-> BlackDiamondOS MBR <-", 0xA, 0xA, 0xD, "-> Which partition number would you like to boot? Type the number now.", 0xA, 0xD, "-> Avaliable partitions:   ", 0
+BOOT_STR: db 0xA, 0xA, 0xD, "-> HaematiteOS MBR <-", 0xA, 0xA, 0xD, "-> Which partition number would you like to boot? Type the number now.", 0xA, 0xD, "-> Avaliable partitions:   ", 0
 VBR_SEP_STR: db 0xA, 0xA, 0xD, 0

@@ -1,5 +1,5 @@
 ;;This is formatted as a FAT32 filesystem
-;;The second stage is located in the reserved sectors
+;;The second stage is a file on the filesystem
 ;;The kernel is a file on the filesystem
 [BITS 16]
 [ORG 0x7C00]
