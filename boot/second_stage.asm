@@ -5,7 +5,7 @@
 ;;1. Retrieves needed information for the kernel
 ;;2. Loads kernel
 ;;3. Enters the best avaliable video mode
-;;4. Enters protected mode
+;;4. Enters long mode
 ;;5. Jumps to kernel
 
 ;;Disk drive # is passed on stack
@@ -59,6 +59,8 @@ call ok
 enable_A20:
 mov ecx, ENABLE_A20_STR
 call print_string
+mov edx, 2097152 - 1
+xor cx, cx
 .check:
 ;;Check if the A20 line is not enabled by checking for wraparound of the bootsig (0x55AA) at the 1M mark
 inc edx
@@ -184,6 +186,15 @@ mov eax, "KERN"
 mov ebx, "EL  "
 call find_file_in_root_dir
 push ebx
+;;Increase file size in clusters by 1, so we don't overwrite anything with int 0x13
+push eax
+mov eax, 512
+xor bx, bx
+mov bl, [bpb.SecPerClus]
+mul bx
+pop ebx
+add eax, ebx
+add eax, 32 ;;Also increase file size by 32 bytes, so the kernel is not loaded at the beginning of a memory region which will be overwritten by a memory block header later in the kernel
 .parse_memory_map:
 ;;Finds a contigous area of memory to load kernel into
 mov ebx, 0x1000 - 24
@@ -195,17 +206,21 @@ cmp [ebx + 16], dword 1 ;;Check if region is usable
 jne .check_memory_region
 cmp [ebx + 4], dword 0 ;;Make sure this region is located <2GB, so we can use REL32 jmps and calls, and RIP relative addressing 
 jne .check_memory_region
-cmp [ebx + 8], dword 2147483648
+cmp [ebx], dword 2147483648
 ja .check_memory_region
+cmp [ebx], dword 1048576 ;;Make sure this region is located >1MB, so it is in high mem
+jb .check_memory_region
 cmp [ebx + 12], dword 0 ;;If this region has a size >4GB, we know it is big enough
 jne .found_memory_region
 cmp [ebx + 8], eax ;;Check if this region has a size big enough for at least the kernel
 jb .check_memory_region
 .found_memory_region:
 mov edx, [ebx]
+add edx, 32 ;;Make sure kernel is not loaded at the beginning of a memory region which will be overwritten by a memory block header later in the kernel
 pop ebx ;;Get starting cluster #
 push edx ;;Copy destination
 push edx ;;Kernel location
+push eax ;;File size
 xor eax, eax
 mov al, [bpb.SecPerClus]
 mov ecx, 512
@@ -258,10 +273,13 @@ pop cx
 cmp ebx, 0x0FFFFFF8 ;;Check if this was the final cluster in chain
 jb .load_cluster
 pop eax ;;Discard EAX we used earlier (bytes per clus)
+pop ebx
 pop edx
 pop eax ;;Discard EDX we used earlier (copy destination)
 push dword 0 ;;Later on we pop a 64 bit register, so this zeros the top of it
-push edx;;Save kernel location
+push edx ;;Save kernel location
+push dword 0 ;;Later on we pop a 64 bit register, so this zeros the top of it
+push ebx ;;Save kernel size
 call ok
 jmp get_vbe_modes
 
@@ -327,7 +345,7 @@ je fail
 call ok
 
 set_vbe_mode:
-mov ecx, GET_VIDEO_MODE_STR
+mov ecx, SET_VIDEO_MODE_STR
 call print_string
 ;;Get the mode info for the selected mode for the kernel's use, and sets the selected mode
 .get_mode_info:
@@ -425,11 +443,12 @@ cmp rax, pag_mem + (0x1000 * 3) + (0x1000 * 64) ;;pag_mem + pml4 + pdpt + (64 * 
 jb .mk_pdpt_64gb
 .exec_kernel:
 mov rax, vbe_mode_info ;;Video info for kernel use
-mov rbx, 0x2000 ;;Memory map for kernel use
-pop rdx ;;Kernel location
-mov ecx, [esp] ;;Booted partition LBA for kernel use
+mov rbx, 0x1000 ;;Memory map for kernel use
+pop rdx ;;Kernel size
+pop rdi ;;Kernel location
+mov ecx, [esp] ;;Booted partition LBA for kernel use (rcx is already zeroed out by this, remember)
 mov esp, 0x1000
-jmp rdx
+jmp rdi
 [BITS 16]
 
 ;;Useful subroutines

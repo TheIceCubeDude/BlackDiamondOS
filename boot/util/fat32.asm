@@ -93,7 +93,6 @@ pop ebx
 ret
 
 load_fat_entry:
-;;TODO:this function trashes stack???
 ;;EBX = FAT entry
 ;;Returns next FAT entry in EBX
 mov eax, ebx
