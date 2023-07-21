@@ -7,7 +7,7 @@ nasm -f elf64 -o build/kernel/start.elf kernel/core/start.asm
 
 x86_64-elf-gcc -ffreestanding -fPIE -c -o build/kernel/kernel.elf kernel/core/kernel.c
 
-x86_64-elf-gcc -mno-red-zone -ffreestanding -nostdlib -lgcc -o build/kernel/linkedkernel.elf build/kernel/start.elf build/kernel/kernel.elf
+x86_64-elf-gcc -mno-red-zone -ffreestanding -nostdlib -lgcc -T script.ld -o build/kernel/linkedkernel.elf build/kernel/start.elf build/kernel/kernel.elf
 x86_64-elf-objcopy -O binary build/kernel/linkedkernel.elf build/KERNEL.BIN
 
 rm OS_volume_image.img

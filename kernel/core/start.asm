@@ -1,5 +1,7 @@
 [BITS 64]
+
 global _start
+global logo
 extern kmain
 
 _start:
@@ -18,4 +20,6 @@ cli
 hlt
 
 %include "kernel/core/ports.asm"
+%include "kernel/core/mem.asm"
 
+logo: incbin "kernel/res/logo.tga"

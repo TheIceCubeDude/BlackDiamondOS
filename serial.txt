@@ -1,0 +1,10 @@
+HaematiteOS kernel RS232 serial debug log @ 115200 baud:
+E820 entry: addr=0x0 len=0x9F000 type=usable;
+E820 entry: addr=0x9F000 len=0x1000 type=unusable;
+E820 entry: addr=0xE8000 len=0x18000 type=unusable;
+E820 entry: addr=0x100000 len=0x1FEF0000 type=usable;
+E820 entry: addr=0x1FFF0000 len=0x10000 type=reclaimable;
+E820 entry: addr=0xFFFC0000 len=0x40000 type=unusable;
+Total usable memory = 536408064 bytes
+Resolution: 1280x720
+

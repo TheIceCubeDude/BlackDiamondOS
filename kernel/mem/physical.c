@@ -51,24 +51,24 @@ void dump_mem_info() {
 		mmap_ptr = (void*)(((u64)mmap_ptr) + 24);
 	}
 	debug("Total usable memory = ");
-	u8 buf[16];
-	itoa(total_mem, buf, 10);
-	debug(buf);
+	u8 str[21];
+	itoa(total_mem, str, 10);
+	debug(str);
 	debug(" bytes\n\r");
 	return;
 }
 
 void dump_phys_mem() {
 	struct phys_mem_block* block = phys_mem_start;
-	u8 buf[17];
+	u8 str[17];
 	while (block) {
 		debug("Physical memory entry: type=allocated size=0x");
-		itoa(block->size, buf, 16);
-		debug(buf);
+		itoa(block->size, str, 16);
+		debug(str);
 		if (block->free_mem_following) {
 			debug("\r\nPhysical memory entry: type=free size=0x");
-			itoa(block->free_mem_following, buf, 16);
-			debug(buf);
+			itoa(block->free_mem_following, str, 16);
+			debug(str);
 		}
 		debug("\r\n");
 		block = block->next;
@@ -140,7 +140,7 @@ void phys_free(void* ptr) {
 	return;
 }
 
-void prep_mem(void* mmap_arg, u64 kernel_size) {
+void* prep_mem(void* mmap_arg, u64 kernel_size) {
 	//Goes through the E820 mem map and sets up a best-fit memory management system using all the memory
 	//Best fit is slow, but that shouldn't matter much
 	//Best fit reduces fragmentation, and is very memory efficient
@@ -166,6 +166,6 @@ void prep_mem(void* mmap_arg, u64 kernel_size) {
 	}
 	prev_block->next = 0;
 	phys_mem_final_block = prev_block;
-	phys_alloc_2gb(kernel_size - sizeof(struct phys_mem_block)); //Allocate kernel memory so it cannot be overwritten
-	return;
+	void* kernel = phys_alloc_2gb(kernel_size - sizeof(struct phys_mem_block)); //Allocate kernel memory so it cannot be overwritten
+	return kernel;
 }
