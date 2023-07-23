@@ -2,6 +2,7 @@
 
 global _start
 global logo
+global font
 extern kmain
 
 _start:
@@ -23,3 +24,4 @@ hlt
 %include "kernel/core/mem.asm"
 
 logo: incbin "kernel/res/logo.tga"
+font: incbin "kernel/res/font.psf"

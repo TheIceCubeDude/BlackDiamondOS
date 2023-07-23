@@ -18,12 +18,9 @@ struct phys_mem_block* phys_mem_final_block;
 
 void _print_entry(struct mmap_entry* entry) {
 	debug("E820 entry: addr=0x");
-	u8 str[17];
-	itoa(entry->address, str, 16);
-	debug(str);
+	debug_hex(entry->address);
 	debug(" len=0x");
-	itoa(entry->length, str, 16);
-	debug(str);
+	debug_hex(entry->length);
 	debug(" type=");
 	switch (entry->type) {
 		case 1: debug("usable"); break;
@@ -51,24 +48,19 @@ void dump_mem_info() {
 		mmap_ptr = (void*)(((u64)mmap_ptr) + 24);
 	}
 	debug("Total usable memory = ");
-	u8 str[21];
-	itoa(total_mem, str, 10);
-	debug(str);
+	debug_dec(total_mem);
 	debug(" bytes\n\r");
 	return;
 }
 
 void dump_phys_mem() {
 	struct phys_mem_block* block = phys_mem_start;
-	u8 str[17];
 	while (block) {
 		debug("Physical memory entry: type=allocated size=0x");
-		itoa(block->size, str, 16);
-		debug(str);
+		debug_hex(block->size);
 		if (block->free_mem_following) {
 			debug("\r\nPhysical memory entry: type=free size=0x");
-			itoa(block->free_mem_following, str, 16);
-			debug(str);
+			debug_hex(block->free_mem_following);
 		}
 		debug("\r\n");
 		block = block->next;

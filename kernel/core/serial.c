@@ -25,3 +25,17 @@ void debug(u8* str) {
 	}
 	return;
 }
+
+void debug_hex(u64 val) {
+	u8 buf[17];
+	itoa(val, buf, 16);
+	debug(buf);
+	return;
+}
+
+void debug_dec(u64 val) {
+	u8 buf[21];
+	itoa(val, buf, 10);
+	debug(buf);
+	return;
+}

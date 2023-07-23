@@ -5,9 +5,9 @@ nasm -f bin -o build/vbr.bin boot/vbr/vbr.asm
 nasm -f bin -o build/BOOT.BIN boot/second_stage.asm
 nasm -f elf64 -o build/kernel/start.elf kernel/core/start.asm
 
-x86_64-elf-gcc -ffreestanding -fPIE -c -o build/kernel/kernel.elf kernel/core/kernel.c
+x86_64-elf-gcc -mno-red-zone -ffreestanding -fPIE -c -o build/kernel/kernel.elf kernel/core/kernel.c
 
-x86_64-elf-gcc -mno-red-zone -ffreestanding -nostdlib -lgcc -T script.ld -o build/kernel/linkedkernel.elf build/kernel/start.elf build/kernel/kernel.elf
+x86_64-elf-gcc -ffreestanding -nostdlib -lgcc -T script.ld -o build/kernel/linkedkernel.elf build/kernel/start.elf build/kernel/kernel.elf
 x86_64-elf-objcopy -O binary build/kernel/linkedkernel.elf build/KERNEL.BIN
 
 rm OS_volume_image.img
@@ -20,4 +20,4 @@ sudo umount mnt
 
 cat build/mbr.bin OS_volume_image.img > OS_disk_image.img
 #./bochs
-qemu-system-x86_64 -hda OS_disk_image.img -serial stdio -m 4G
+doas qemu-system-x86_64 -hda OS_disk_image.img -serial stdio -m 4G --enable-kvm
