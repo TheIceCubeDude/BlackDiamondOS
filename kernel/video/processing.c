@@ -250,7 +250,12 @@ void scale_buffer(struct framebuffer dest, struct framebuffer src) {
         f32 scale_y = (f32)dest.pixel_height / (f32)src.pixel_height;
 	for (u16 i = 0; i < dest.pixel_height; i++) {
 		for (u16 j = 0; j < dest.pixel_width; j++) {
-			u32 pixel = *(src.address + (round(((f32)i)/scale_y) * src.pixel_width) + round(((f32)j)/scale_x));
+			u32 x = round(((f32)j)/scale_x);
+			u32 y = round(((f32)i)/scale_y);
+			//Make sure that, if rounded up, the pixel is sampled in the image boundaries
+			if (x >= src.pixel_width) {x = src.pixel_width - 1;}
+			if (y >= src.pixel_height) {y = src.pixel_width - 1;}
+			u32 pixel = *(src.address + y * src.pixel_width + x);
 			*(dest.address + (i * dest.pixel_width) + j) = pixel;
 		}
 	}
