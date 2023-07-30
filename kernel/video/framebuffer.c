@@ -32,13 +32,17 @@ void init_video(void* video_info) {
 	return;
 }
 
-void set_active(struct framebuffer buf) {
+void set_active_buffer(struct framebuffer buf) {
 	active_buffer = buf;
 	return;
 }
 
-struct framebuffer get_active() {
+struct framebuffer get_active_buffer() {
 	return active_buffer;
+}
+
+struct framebuffer get_screen_buffer() {
+	return back_buffer;
 }
 
 u32* get_linear_address(u16 x, u16 y) {
@@ -47,7 +51,7 @@ u32* get_linear_address(u16 x, u16 y) {
 }
 
 void swap_bufs() {
-	//Copy each line individually, because there may be padding at the end of each line
+	//Copy each line individually, because there may be padding at the end of each line on the front buffer
 	for (u16 i = 0; i < front_buffer.pixel_height; i++) {
 		memcpy(		(void*)((u64)front_buffer.address + (i * front_buffer_width_bytes)), 
 				(void*)((u64)back_buffer.address + (i * back_buffer.pixel_width * BPP)),

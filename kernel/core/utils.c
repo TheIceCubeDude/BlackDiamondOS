@@ -22,3 +22,12 @@ void itoa(u64 i, u8* buf, u8 base) {
         }
         return;
 }
+
+u32 round(f32 i) {
+	if (i > 0) {
+		return (u32)(i + 0.5);
+	} else if (i < 0) {
+		return (u32)(i - 0.5);
+
+	} else {return (u32)i;}
+}

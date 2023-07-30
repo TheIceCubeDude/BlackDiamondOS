@@ -1,12 +1,12 @@
 struct psf_header {
-	uint32_t magic;
-	uint32_t version;
-	uint32_t header_size;
-	uint32_t flags;
-	uint32_t glyph_count;
-	uint32_t glyph_size;
-	uint32_t height;
-	uint32_t width;
+	u32 magic;
+	u32 version;
+	u32 header_size;
+	u32 flags;
+	u32 glyph_count;
+	u32 glyph_size;
+	u32 height;
+	u32 width;
 };
 
 const u32 transparent = 0xFF000000;
@@ -65,3 +65,6 @@ void put_str(u8* str, u16 x, u16 y, u16 width) {
 	}
 	return;
 }
+
+u32 get_font_width() {return active_font->width;}
+u32 get_font_height() {return active_font->height;}

@@ -177,11 +177,11 @@ u8 put_targa(u16 x, u16 y, void* data) {
 				//Check if packet header indicates RLE
 				if (*data_ptr & 0x80) {
 					//Grab run-length 
-					u8 run = (*data_ptr & 0x7F ) + 1;
+					u8 run = (*data_ptr & 0x7F) + 1;
 					data_ptr++;
 					//Check if colours are 24 bits long, and grab the next colour
 					u32 colour;
-					if (header->colour_map_entry_size == 24) {colour = *(u32*)data_ptr & 0x00FFFFFF; data_ptr += 3;}
+					if (header->bits_per_pixel == 24) {colour = *(u32*)data_ptr & 0x00FFFFFF; data_ptr += 3;}
 					//Otherwise it is 32 bits long, and grab the next colour
 					else {colour = *(u32*)data_ptr; data_ptr += 4;} 
 					for (; run > 0; run--) {
@@ -208,7 +208,7 @@ u8 put_targa(u16 x, u16 y, void* data) {
 					for (; run > 0; run--) {
 						//Check if colours are 24 bits long, and grab the next colour
 						u32 colour;
-						if (header->colour_map_entry_size == 24) {colour = *(u32*)data_ptr & 0x00FFFFFF; data_ptr += 3;}
+						if (header->bits_per_pixel == 24) {colour = *(u32*)data_ptr & 0x00FFFFFF; data_ptr += 3;}
 						//Otherwise it is 32 bits long, and grab the next colour
 						else {colour = *(u32*)data_ptr; data_ptr += 4;} 
 						//Draw pixel
@@ -234,3 +234,26 @@ u8 put_targa(u16 x, u16 y, void* data) {
 	}
 	return 1;
 }
+
+void composite_buffer(struct framebuffer src, u16 x, u16 y) {
+	for (u16 i = 0; i < src.pixel_height; i++) {
+		for (u16 j = 0; j < src.pixel_width; j++) {
+			put_pixel(j + x, i + y, *(src.address + (i * src.pixel_width) + j));
+		}
+	}
+	return;
+}
+
+//Scale a buffer into another buffer by nearest neighbour interpolation
+void scale_buffer(struct framebuffer dest, struct framebuffer src) {
+       	f32 scale_x = (f32)dest.pixel_width / (f32)src.pixel_width;
+        f32 scale_y = (f32)dest.pixel_height / (f32)src.pixel_height;
+	for (u16 i = 0; i < dest.pixel_height; i++) {
+		for (u16 j = 0; j < dest.pixel_width; j++) {
+			u32 pixel = *(src.address + (round(((f32)i)/scale_y) * src.pixel_width) + round(((f32)j)/scale_x));
+			*(dest.address + (i * dest.pixel_width) + j) = pixel;
+		}
+	}
+        return;
+}
+

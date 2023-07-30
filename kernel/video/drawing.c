@@ -5,6 +5,10 @@ u8 put_pixel(u16 x, u16 y, u32 colour) {
 	return 1;
 }
 
+u32 get_pixel(u16 x, u16 y) {
+	return *get_linear_address(x, y);
+}
+
 void put_rect(u16 x, u16 y, u16 width, u16 height, u32 colour) {
 	u32* base = get_linear_address(x, y);
 	for (u16 i = 0; i < height; i++) {
