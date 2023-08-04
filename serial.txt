@@ -6,6 +6,7 @@ HaematiteOS kernel RS232 serial debug log @ 115200 baud:
 E820 entry: addr=0x1FFF0000 len=0x10000 type=reclaimable;
 E820 entry: addr=0xFFFC0000 len=0x40000 type=unusable;
 Total usable memory = 536408064 bytes
-Resolution: 1280x720
-
-Kernel panic: System halted
+Physical memory entry: type=allocated size=0x0
+Physical memory entry: type=allocated size=0x11E20
+Physical memory entry: type=free size=0x1E059980
+Physical memory entry: type=allocated size=0x1E84800

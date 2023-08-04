@@ -252,7 +252,7 @@ void scale_buffer(struct framebuffer dest, struct framebuffer src) {
 		for (u16 j = 0; j < dest.pixel_width; j++) {
 			u32 x = round(((f32)j)/scale_x);
 			u32 y = round(((f32)i)/scale_y);
-			//Make sure that, if rounded up, the pixel is sampled in the image boundaries
+			//Make sure that, if rounded up, the pixel is sampled within the image boundaries
 			if (x >= src.pixel_width) {x = src.pixel_width - 1;}
 			if (y >= src.pixel_height) {y = src.pixel_width - 1;}
 			u32 pixel = *(src.address + y * src.pixel_width + x);

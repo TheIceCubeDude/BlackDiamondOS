@@ -11,22 +11,21 @@ push r13
 push r14
 push r15
 mov r8, rdx
+mov rcx, rsi
 .count_check:
 ;;Check if count is divisible by 16, otherwise memset the remainder
 mov rax, r8
 xor rdx, rdx
 mov rbx, 16
 div rbx
+sub r8, rdx
+.fill:
 test rdx, rdx
 jz .prep_loop
-sub r8, rdx
-mov rcx, rsi
-.fill:
 mov [rdi], cl
 inc rdi
 dec rdx
-test rdx, rdx
-jnz .fill
+jmp .fill
 .prep_loop:
 ;;Prepare the xmm0 register by filling it with the src byte 16 times
 mov ch, cl
@@ -47,18 +46,18 @@ test rdx, rdx
 jz .loop_aligned
 .loop_unaligned:
 ;;Loop through and fill in the data from the xmm0 register
-movdqu [rdi], xmm0
-add rdi, 16
 test r8, r8
 jz .end
+movdqu [rdi], xmm0
+add rdi, 16
 sub r8, 16
 jmp .loop_unaligned
 .loop_aligned:
 ;;Loop through and fill in the data from the xmm0 register
-movdqa [rdi], xmm0
-add rdi, 16
 test r8, r8
 jz .end
+movdqa [rdi], xmm0
+add rdi, 16
 sub r8, 16
 jmp .loop_aligned
 .end:
@@ -85,17 +84,16 @@ mov rax, r8
 xor rdx, rdx
 mov rbx, 16
 div rbx
-test rdx, rdx
-jz .dest_align_check
 sub r8, rdx
 .fill:
+test rdx, rdx
+jz .dest_align_check
 mov cl, [rsi]
 mov [rdi], cl
 inc rdi
 inc rsi
 dec rdx
-test rdx, rdx
-jnz .fill
+jmp .fill
 .dest_align_check:
 ;;Check if the destination is divisble by 16 so we can use aligned SSE instructions
 mov rax, rdi
@@ -132,41 +130,41 @@ test r10, r10
 jz .loop_dest_unaligned_src_unaligned
 jmp .loop_dest_unaligned_src_aligned
 .loop_dest_aligned_src_unaligned:
+test r8, r8
+jz .end
 movdqu xmm0, [rsi]
 movdqa [rdi], xmm0
 add rsi, rcx
 add rdi, rcx
 sub r8, rcx
-test r8, r8
-jnz .loop_dest_aligned_src_unaligned
-jmp .end
+jmp .loop_dest_aligned_src_unaligned
 .loop_dest_aligned_src_aligned:
+test r8, r8
+jz .end
 movdqa xmm0, [rsi]
 movdqa [rdi], xmm0
 add rsi, rcx
 add rdi, rcx
 sub r8, rcx
-test r8, r8
-jnz .loop_dest_aligned_src_aligned
-jmp .end
+jmp .loop_dest_aligned_src_aligned
 .loop_dest_unaligned_src_unaligned:
+test r8, r8
+jz .end
 movdqu xmm0, [rsi]
 movdqu [rdi], xmm0
 add rsi, rcx
 add rdi, rcx
 sub r8, rcx
-test r8, r8
-jnz .loop_dest_unaligned_src_unaligned
-jmp .end
+jmp .loop_dest_unaligned_src_unaligned
 .loop_dest_unaligned_src_aligned:
+test r8, r8
+jz .end
 movdqa xmm0, [rsi]
 movdqu [rdi], xmm0
 add rsi, rcx
 add rdi, rcx
 sub r8, rcx
-test r8, r8
-jnz .loop_dest_unaligned_src_aligned
-jmp .end
+jmp .loop_dest_unaligned_src_aligned
 .end:
 pop r15
 pop r14

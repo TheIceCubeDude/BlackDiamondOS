@@ -126,8 +126,9 @@ void* phys_alloc_2gb(u64 size) {
 
 void phys_free(void* ptr) {
 	struct phys_mem_block* block = (struct phys_mem_block*)((u64)ptr - sizeof(struct phys_mem_block));
+	if (block->next) {phys_mem_final_block = block->prev;}
+	else {block->next->prev = block->prev;}
 	block->prev->next = block->next;
-	block->next->prev = block->prev;
 	block->prev->free_mem_following += block->size + sizeof(struct phys_mem_block) + block->free_mem_following;
 	return;
 }
