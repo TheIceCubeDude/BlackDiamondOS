@@ -8,6 +8,7 @@ void kpanic(u8* str);
 
 #include "serial.c"
 #include "../mem/mem.c"
+#include "interrupts.c"
 #include "../video/video.c"
 
 extern u8 logo; //This is not a pointer to the logo!
@@ -84,8 +85,8 @@ void kmain(void* video_info, void* mmap, u64 booted_partition_lba, u64 kernel_si
 	serial_init();
 	debug("HaematiteOS kernel RS232 serial debug log @ 115200 baud:\n\r");
 	void* kernel = prep_mem(mmap, kernel_size);
-	void* logo_ptr = (void*)((u64)&logo + (u64)kernel - 32);
-	void* font_ptr = (void*)((u64)&font + (u64)kernel - 32);
+	void* logo_ptr = (void*)((u64)&logo + (u64)kernel);
+	void* font_ptr = (void*)((u64)&font + (u64)kernel);
 	void* kheap = phys_alloc(32000000);
 	if (!kheap) {serial_kpanic("not enough memory to create a kernel heap");} //32 megs
 	set_active_heap(kheap);
@@ -93,8 +94,10 @@ void kmain(void* video_info, void* mmap, u64 booted_partition_lba, u64 kernel_si
 	init_video(video_info);
 	draw_logo(logo_ptr); 
 	if (!set_font(font_ptr)) {serial_kpanic("font not supported (must not be Unicode, and must be PSF version 2)");}
+	init_interrupts(kernel);
 	kpanic("System halted");
 
-	//TODO: interrupts, pci, disk, fat32, ps2 mouse/keyboard, scheduler, dynamic linking/function table patching, genesis program/userland/desktop environment, more drivers (timers, audio, etc)
+	//TODO: does code actually need to be loaded <2gb?
+	//TODO: pci, disk, fat32, ps2 mouse/keyboard, scheduler, dynamic linking/function table patching, genesis program/userland/desktop environment, more drivers (timers, audio, etc)
 	//Might also want to make phys_alloc and malloc align. Might also want to have physical memory corruption detection by checking a lead and trail sig in the header when phys_free is called. Might also want to have the slab allocator run on top of a buddy allocator.
 }

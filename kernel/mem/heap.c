@@ -1,7 +1,5 @@
 //This heap implementation is a slab allocator
-
-#define slab_size 4096 //const u16 slab_size = 4096;
-
+#define SLAB_SIZE 4096
 struct heap {
 	struct heap_cache* free_space_for_cache; //Free list of caches
 	struct heap_slab* free_space_for_slab;  //Free list of slabs
@@ -21,7 +19,7 @@ struct heap_slab {
 	u32 allocated_objects;
 	u32 max_objects;
 	void* first_free_object;
-	u8 objects[slab_size];
+	u8 objects[SLAB_SIZE];
 };
 
 struct heap* active_heap;
@@ -75,7 +73,7 @@ struct heap_slab* _make_slab(u32 size) {
 	//Initalise slab elements
 	slab->next = 0;
 	slab->allocated_objects = 0;
-	slab->max_objects = slab_size / size;
+	slab->max_objects = SLAB_SIZE / size;
 	slab->first_free_object = slab->objects;
 	//Initalise object free list
 	for (u16 i = 0; i < slab->max_objects; i++) {
@@ -90,7 +88,7 @@ void* malloc(u32 size) {
 	//Make sure object is larger than 8 bytes so a pointer could fit in it
 	if (size < 8) {size = 8;}
 	//Make sure object is no larger than slab_size, otherwise pass the request to the physical memory manager (maybe change to a budd allocator later?)
-	if (size > slab_size) {return phys_alloc(size);}
+	if (size > SLAB_SIZE) {return phys_alloc(size);}
 	//Find cache of the desired size, otherwise make it, and if we can't make it we have run out of memory (so return 0)
 	if (!active_heap->first_cache) {active_heap->first_cache = _make_cache(size);}
 	struct heap_cache* cache = active_heap->first_cache;
@@ -214,7 +212,7 @@ void free(void* alloc) {
 
 void dump_heap() {
 	debug("Heap dump: slab_size=");
-	debug_dec(slab_size);
+	debug_dec(SLAB_SIZE);
 
 	debug(" free_caches=");
 	struct heap_cache* freed_cache = active_heap->free_space_for_cache;

@@ -31,3 +31,10 @@ u32 round(f32 i) {
 
 	} else {return (u32)i;}
 }
+
+void pwait() {
+	//Port wait (1-4ms delay)
+	//Port 0x80 is unused after POST
+	outb(0x80, 0);
+	return;
+}
