@@ -53,6 +53,14 @@ mov cr0, eax
 mov eax, cr4
 or ax, 0x600 ;;Set SSE enable and SSE exception unmask
 mov cr4, eax
+.pci:
+mov ax, 0xB101
+int 0x1A ;;PCI installation check
+cmp ah, 0 ;;Not installed
+jne fail
+and al, 1
+cmp al, 0
+je fail ;;Access mechanism 1 not supported
 .success:
 call ok
 
@@ -578,7 +586,7 @@ vbe_mode_info:
 OK_STR: db "OK", 0xA, 0xD, "-> ", 0
 FAIL_STR: db "FAIL", 0
 ENABLE_A20_STR: db "Enabling A20 line...", 0
-SYS_SUPPORT_STR: db "Checking for system support (64 bits + SSE2)...", 0
+SYS_SUPPORT_STR: db "Checking for system support (64 bits + SSE2 + PCI)...", 0
 BIOS_MMAP_STR: db "Retrieving BIOS E820 memory map...", 0
 LOADING_KERNEL_STR: db "Loading kernel...", 0
 GET_VIDEO_MODE_STR: db "Finding compatible VBE video mode...", 0

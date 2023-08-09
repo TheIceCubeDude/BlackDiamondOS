@@ -7,5 +7,11 @@ HaematiteOS kernel RS232 serial debug log @ 115200 baud:
 E820 entry: addr=0xFFFC0000 len=0x40000 type=unusable;
 Total usable memory = 536408064 bytes
 Resolution: 1280x720
+Found PCI device on bus:0 slot:0 function:0
+Found PCI device on bus:0 slot:1 function:0
+Found PCI device on bus:0 slot:1 function:1
+Found PCI device on bus:0 slot:1 function:2
+Found PCI device on bus:0 slot:1 function:3
 
+Kernel panic: System halted
 Unhandled interrupt
