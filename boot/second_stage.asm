@@ -202,7 +202,7 @@ mov bl, [bpb.SecPerClus]
 mul bx
 pop ebx
 add eax, ebx
-add eax, 64 ;;Also increase file size by 64 bytes, so the kernel is not loaded at the beginning of a memory region which will be overwritten by 2 memory block headers later in the kernel
+add eax, 96 ;;Also increase file size by 96 bytes, so the kernel is not loaded at the beginning of a memory region which will be overwritten by 2 memory block headers later in the kernel
 .parse_memory_map:
 ;;Finds a contigous area of memory to load kernel into
 mov ebx, 0x1000 - 24
@@ -224,7 +224,7 @@ cmp [ebx + 8], eax ;;Check if this region has a size big enough for at least the
 jb .check_memory_region
 .found_memory_region:
 mov edx, [ebx]
-add edx, 64 ;;Make sure kernel is not loaded at the beginning of a memory region which will be overwritten by 2 memory block headers later in the kernel
+add edx, 96 ;;Make sure kernel is not loaded at the beginning of a memory region which will be overwritten by 2 memory block headers later in the kernel
 pop ebx ;;Get starting cluster #
 push edx ;;Copy destination
 push edx ;;Kernel location

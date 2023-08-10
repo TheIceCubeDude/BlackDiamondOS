@@ -1,26 +1,29 @@
 //This heap implementation is a slab allocator
 #define SLAB_SIZE 4096
 struct heap {
+	u64 padding;
 	struct heap_cache* free_space_for_cache; //Free list of caches
 	struct heap_slab* free_space_for_slab;  //Free list of slabs
 	//TODO if variable size slabs are added (for allocations larger than slab_size bytes) to this in the future, free space will have to be managed using another underlying memory allocator (buddy allocator?)
 	u8* free_space;
 	struct heap_cache* first_cache;
 	void* heap_end;
-};
+} __attribute__((packed));
 struct heap_cache {
 	struct heap_cache* next;
+	u32 padding;
 	u32 size;
 	struct heap_slab* avaliable_slabs;
 	struct heap_slab* full_slabs;
-};
+}__attribute__((packed));
 struct heap_slab {
 	struct heap_slab* next;
+	u64 padding;
 	u32 allocated_objects;
 	u32 max_objects;
 	void* first_free_object;
 	u8 objects[SLAB_SIZE];
-};
+}__attribute__((packed));
 
 struct heap* active_heap;
 

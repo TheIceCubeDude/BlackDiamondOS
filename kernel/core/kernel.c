@@ -16,6 +16,8 @@ extern u8 logo; //This is not a pointer to the logo!
 extern u8 font; //This is not a pointer to the font!
 extern void halt();
 
+void* kheap;
+
 void serial_kpanic(u8* str) {
 	debug("\n\rKernel panic: ");
 	debug(str);
@@ -26,14 +28,16 @@ void kpanic(u8* str) {
 	debug("\n\rKernel panic: ");
 	debug(str);
 
+	//We cannot use phys_alloc because we don't know if it has been corrupted, so just use the raw kheap to store our buffers
+	//We are going to halt the system anyway, so it doesn't matter that this trashes all the kernel objects
+
 	struct framebuffer active_buffer = get_screen_buffer();
 	set_active_buffer(active_buffer);
 	put_rect(active_buffer.pixel_width / 10 - active_buffer.pixel_width / 100, active_buffer.pixel_height / 10 - active_buffer.pixel_height / 100, active_buffer.pixel_width / 10 * 8 + active_buffer.pixel_width / 50, active_buffer.pixel_height / 10 * 8 + active_buffer.pixel_height / 50, 0x00FF0000);
 	put_rect(active_buffer.pixel_width / 10, active_buffer.pixel_height / 10, active_buffer.pixel_width / 10 * 8, active_buffer.pixel_height / 10 * 8, 0);
 
 	struct framebuffer text_box = {0, 350, 350};
-	text_box.address = malloc(text_box.pixel_width * text_box.pixel_height * 4);
-	if (!text_box.address) {halt();}
+	text_box.address = kheap;
 	set_active_buffer(text_box);
 	put_rect(0, 0, 350, 350, 0);
 	set_bg_colour(0xFF000000);
@@ -42,15 +46,12 @@ void kpanic(u8* str) {
 	put_str(str, get_font_width(), get_font_height() * 3, text_box.pixel_width);
 
 	struct framebuffer scaled_text_box = {0, active_buffer.pixel_width / 10 * 8, active_buffer.pixel_height / 10 * 8};
-	scaled_text_box.address = malloc(scaled_text_box.pixel_width * scaled_text_box.pixel_height * 4);
-	if (!scaled_text_box.address) {halt();}
+	scaled_text_box.address = kheap + (text_box.pixel_width * text_box.pixel_height * 4);
 	scale_buffer(scaled_text_box, text_box);
 
 	set_active_buffer(active_buffer);
 	composite_buffer(scaled_text_box, active_buffer.pixel_width / 10, active_buffer.pixel_height / 10);
 	swap_bufs();
-	free(scaled_text_box.address);
-	free(text_box.address);
 	halt();
 }
 
@@ -82,13 +83,13 @@ void draw_logo(void* logo_ptr) {
 	return;
 }
 
-void kmain(void* video_info, void* mmap, u64 booted_partition_lba, u64 kernel_size) {
+void kmain(void* video_info, void* mmap, u64 booted_partition_lba, u64 kernel_size, void* kernel) {
 	serial_init();
 	debug("HaematiteOS kernel RS232 serial debug log @ 115200 baud:\n\r");
-	void* kernel = prep_mem(mmap, kernel_size);
+	prep_mem(mmap, kernel, kernel_size);
 	void* logo_ptr = (void*)((u64)&logo + (u64)kernel);
 	void* font_ptr = (void*)((u64)&font + (u64)kernel);
-	void* kheap = phys_alloc(32000000); //32 megabytes
+	kheap = phys_alloc(32000000); //32 megabytes
 	if (!kheap) {serial_kpanic("not enough memory to create a kernel heap");}
 	set_active_heap(kheap);
 	heap_init(32000000);
@@ -97,10 +98,8 @@ void kmain(void* video_info, void* mmap, u64 booted_partition_lba, u64 kernel_si
 	if (!set_font(font_ptr)) {serial_kpanic("font not supported (must not be Unicode, and must be PSF version 2)");}
 	init_interrupts(kernel);
 	init_pci();
-
+	
 	kpanic("System halted");
 
-	//TODO: does code actually need to be loaded <2gb?
 	//TODO: disk, fat32, ps2 mouse/keyboard, scheduler, dynamic linking/function table patching, genesis program/userland/desktop environment, more drivers (timers, audio, etc)
-	//Might also want to make phys_alloc and malloc align. Might also want to have physical memory corruption detection by checking a lead and trail sig in the header when phys_free is called. Might also want to have the slab allocator run on top of a buddy allocator.
 }

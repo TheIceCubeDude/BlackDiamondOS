@@ -12,6 +12,7 @@ mov rsi, rbx
 push rdx 
 mov rdx, rcx
 pop rcx
+lea r8, [rel _start]
 call kmain
 
 ;;Utils
