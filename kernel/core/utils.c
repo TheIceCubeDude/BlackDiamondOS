@@ -38,3 +38,13 @@ void pwait() {
 	outb(0x80, 0);
 	return;
 }
+
+void* align(void* address, u32 alignment) {
+	//Aligns a memory address
+	//Useful for aligning memory allocations for PCI DMA, and similar things
+	u32 remainder = ((u64)address) % alignment;
+	if (remainder) {
+		address = (void*)((u64)address + (alignment - remainder));
+	}
+	return address;
+}

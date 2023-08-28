@@ -11,6 +11,7 @@ void kpanic(u8* str);
 #include "interrupts.c"
 #include "../video/video.c"
 #include "pci.c"
+#include "../disk/disk.c"
 
 extern u8 logo; //This is not a pointer to the logo!
 extern u8 font; //This is not a pointer to the font!
@@ -84,6 +85,8 @@ void draw_logo(void* logo_ptr) {
 }
 
 void kmain(void* video_info, void* mmap, u64 booted_partition_lba, u64 kernel_size, void* kernel) {
+	//Note that, in this codebase, underscored functions are used to show they are helper functions, and not 'utility' functions
+	//They are not reserved by libraries - this a kernel, there is no standard library
 	serial_init();
 	debug("HaematiteOS kernel RS232 serial debug log @ 115200 baud:\n\r");
 	prep_mem(mmap, kernel, kernel_size);
@@ -98,6 +101,7 @@ void kmain(void* video_info, void* mmap, u64 booted_partition_lba, u64 kernel_si
 	if (!set_font(font_ptr)) {serial_kpanic("font not supported (must not be Unicode, and must be PSF version 2)");}
 	init_interrupts(kernel);
 	init_pci();
+	init_disk((u64)kernel);
 	
 	kpanic("System halted");
 

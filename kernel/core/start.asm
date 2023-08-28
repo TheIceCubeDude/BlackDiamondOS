@@ -61,6 +61,7 @@ pop rsp
 %include "kernel/core/ports.asm"
 %include "kernel/core/mem.asm"
 %include "kernel/core/interrupts.asm"
+%include "kernel/disk/isr_wrappers.asm"
 
 SECTION .data
 logo: incbin "kernel/res/logo.tga"

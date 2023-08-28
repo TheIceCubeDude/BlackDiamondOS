@@ -122,6 +122,13 @@ void* malloc(u32 size) {
 	return object;
 }	
 
+void* cmalloc(u32 size) {
+	//Malloc but initalises everything to 0
+	void* ptr = malloc(size);
+	if (ptr) {memset(ptr, 0, size);}
+	return ptr;
+}
+
 u8 _check_slab_for_pointer(void* alloc, struct heap_slab* slab, u32 size) {
 	//Check if this slab contains alloc
 	if (((u64)slab < (u64)alloc) && ((u64)slab + sizeof(struct heap_slab) >= (u64)alloc)) {

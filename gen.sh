@@ -20,4 +20,13 @@ sudo umount mnt
 
 cat build/mbr.bin OS_volume_image.img > OS_disk_image.img
 #./bochs
-doas qemu-system-x86_64 -hda OS_disk_image.img -serial stdio -m 4G --enable-kvm
+doas qemu-system-x86_64 \
+ -boot menu=on \
+-drive id=disk,file=OS_disk_image.img,if=none \
+-drive id=test,file=a.img,if=none \
+-device ahci,id=ahci \
+-device ide-hd,drive=disk,bus=ahci.0 \
+-device ide-hd,drive=test,bus=ahci.1 \
+ -serial stdio \
+ -m 4G \
+ --enable-kvm

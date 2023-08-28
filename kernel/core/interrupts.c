@@ -42,7 +42,7 @@ u64 exception_handler(u8 interrupt) {
 		case 3: kpanic("exception caught: breakpoint");
 		case 4: kpanic("exception caught: overflow"); //TODO allow this to be hooked
 		case 5: kpanic("exception caught: bound checks failed"); //TODO allow this to be hooked
-		case 6: kpanic("exception caught: invalid opcode");
+		case 6: kpanic("exception caught: invalid opcode"); //TODO plug this into the scheduler
 		case 7: kpanic("exception caught: CPU extention unavaliable");
 		case 8: kpanic("exception caught: double fault");
 		case 11:
@@ -72,22 +72,25 @@ void add_interrupt(u8 vector, u8 trap, void* isr) {
 }
 
 void irq_eoi(u8 irq) {
-	//Send end of interrupt to the PIC
-	if (irq > 8) {outb(PIC2_CMD, 0x20);}
+	//Send end of interrupt to the PICs
+	if (irq >= 8) {outb(PIC2_CMD, 0x20);}
 	outb(PIC1_CMD, 0x20);
 	return;
 }
 
 void irq_unmask(u8 irq) {
 	if (irq < 8) {
-		outb(PIC1_DAT, 1 << irq);
+		u8 mask = inb(PIC1_DAT);
+		outb(PIC1_DAT, mask & ~(1<<irq));
 	} else {
-		outb(PIC2_DAT, 1 << (irq - 8));
+		irq -= 8;
+		u8 mask = inb(PIC2_DAT);
+		outb(PIC2_DAT, mask & ~(1<<irq));
 	}
 	return;
 }
 
-void program_pic() {
+void _program_pic() {
 	//Reprograms the PIC to map interrupts to int 32
 	u8 icw1 = 0b00010001; //Reinitalise PIC, expect to recieve icw4
 	u8 icw4 = 0b00000001; //Use 8086 mode
@@ -106,12 +109,17 @@ void program_pic() {
 	outb(PIC2_DAT, icw4); pwait();
 
 	//Mask all irqs
-	outb(PIC1_DAT, 0);
-	outb(PIC2_DAT, 0);
+	outb(PIC1_DAT, 0xFF);
+	outb(PIC2_DAT, 0xFF);
 	return;
 }
 
 void init_interrupts(void* kernel) {
+	//Setup IRQs
+	_program_pic();
+	irq_unmask(2); //Enable PIC 2
+	enable_irqs();
+	//Setup IDT
 	idt = malloc(sizeof(*idt));
 	idtr.size = sizeof(*idt) - 1;
 	idtr.offset = idt;
@@ -125,13 +133,9 @@ void init_interrupts(void* kernel) {
 		*(u64*)(exception + 31) = (u64)exception_handler; //Do not add kernel offset because GCC generates PIC
 		add_interrupt(i, 1, exception);
 	}
-	for (u8 i = 32; i < 255; i++) {
+	for (u8 i = 48; i < 255; i++) {
 		add_interrupt(i, 0,(u8*)kernel + (u64)unhandled_int_wrapper);
 	}
 	set_idt(&idtr);
-	//Setup IRQs
-	program_pic();
-	irq_unmask(2); //Enable PIC 2
-	enable_irqs();
 	return;
 }
