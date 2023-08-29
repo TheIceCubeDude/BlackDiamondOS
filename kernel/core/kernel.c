@@ -8,6 +8,7 @@ void kpanic(u8* str);
 
 #include "serial.c"
 #include "../mem/mem.c"
+#include "../acpi/acpi.c"
 #include "interrupts.c"
 #include "../video/video.c"
 #include "pci.c"
@@ -99,11 +100,14 @@ void kmain(void* video_info, void* mmap, u64 booted_partition_lba, u64 kernel_si
 	init_video(video_info);
 	draw_logo(logo_ptr); 
 	if (!set_font(font_ptr)) {serial_kpanic("font not supported (must not be Unicode, and must be PSF version 2)");}
+	init_acpi();
+	debug_hex(acpi_get_lapic());
+	while (1) {}
 	init_interrupts(kernel);
 	init_pci();
 	init_disk((u64)kernel);
 	
 	kpanic("System halted");
 
-	//TODO: disk, fat32, ps2 mouse/keyboard, scheduler, dynamic linking/function table patching, genesis program/userland/desktop environment, more drivers (timers, audio, etc)
+	//TODO: disk, get rid off errors by casting to u64 first, fat32, ps2 mouse/keyboard, scheduler, dynamic linking/function table patching, genesis program/userland/desktop environment, more drivers (timers, audio, etc)
 }

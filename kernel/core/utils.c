@@ -32,6 +32,25 @@ u32 round(f32 i) {
 	} else {return (u32)i;}
 }
 
+u8 strcmp(u8* str1, u8* str2, u16 len) {
+	//Checks if 2 strings match
+	//If len=0, continue until NULL terminator
+	if (!len) {
+		while (*str1 == *str2) {
+			if (!*str1) {return 1;}
+			str1++;
+			str2++;
+		}
+		return 0;
+	}
+	for (; len; len--) {
+		if (*str1 != *str2) {return 0;}
+		str1++;
+		str2++;
+	}
+	return 1;
+}
+
 void pwait() {
 	//Port wait (1-4ms delay)
 	//Port 0x80 is unused after POST
